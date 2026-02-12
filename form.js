@@ -237,74 +237,131 @@ generatePDFBtn.addEventListener('click', async () => {
         doc.setFillColor(220, 20, 60);
         doc.rect(0, 0, pageWidth, 5, 'F');
         
-        // Calculate photo dimensions
-        const photoMargin = isMobile ? 22 : 40;
+        // ===== FIXED: Mobile photo sizing =====
+        // Calculate photo dimensions with mobile-specific adjustments
+        const photoMargin = isMobile ? 30 : 40;
         const frameWidth = pageWidth - (photoMargin * 2);
-        const topSpace = isMobile ? 45 : 60;
-        const captionBoxHeight = isMobile ? 90 : 100;
-        const bottomSpace = isMobile ? 60 : 70;
+        
+        // Adjust top and bottom spacing for mobile
+        const topSpace = isMobile ? 40 : 60;
+        const captionBoxHeight = isMobile ? 80 : 100;
+        const bottomSpace = isMobile ? 50 : 70;
         const availableHeight = pageHeight - topSpace - captionBoxHeight - bottomSpace;
         
-        let frameHeight = frameWidth * 0.75; // 4:3 aspect ratio
+        // For mobile, use a more square aspect ratio (4:3 standard, but adjust if too tall)
+        let frameHeight = frameWidth * 0.75; // Start with 4:3
+        
+        // If the 4:3 image is too tall for available space, fit to height instead
         if (frameHeight > availableHeight) {
             frameHeight = availableHeight;
-        }
-        
-        const frameX = photoMargin;
-        const frameY = topSpace;
-        
-        // Shadow
-        doc.setFillColor(200, 200, 200);
-        doc.roundedRect(frameX + 2, frameY + 2, frameWidth, frameHeight, 3, 3, 'F');
-        
-        // White frame
-        const framePadding = isMobile ? 7 : 10;
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(frameX - framePadding, frameY - framePadding, 
-                       frameWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'F');
-        
-        // Add photo
-        const imgData = await toDataURL(photosList[i]);
-        doc.addImage(imgData, 'JPEG', frameX, frameY, frameWidth, frameHeight);
-        
-        // Frame border
-        doc.setDrawColor(220, 20, 60);
-        doc.setLineWidth(isMobile ? 1.2 : 1.8);
-        doc.roundedRect(frameX - framePadding, frameY - framePadding, 
-                       frameWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'S');
-        
-        // Caption box
-        const captionY = frameY + frameHeight + (isMobile ? 22 : 28);
-        const captionBoxWidth = pageWidth - (photoMargin * 2);
-        const captionBoxX = photoMargin;
-        
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'F');
-        doc.setDrawColor(255, 182, 193);
-        doc.setLineWidth(1.2);
-        doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'S');
-        
-        // Caption text
-        const caption = captionsList[i] || '';
-        if (caption) {
-            const captionPadding = isMobile ? 12 : 15;
-            const captionMaxWidth = captionBoxWidth - (captionPadding * 2);
-            const captionImgHeight = captionBoxHeight - (captionPadding * 2);
-            const captionFontSize = isMobile ? 13 : 16;
-            const captionImage = await renderTextWithEmojis(caption, captionFontSize, captionMaxWidth);
-            doc.addImage(captionImage, 'PNG', captionBoxX + captionPadding, 
-                        captionY + captionPadding, captionMaxWidth, captionImgHeight);
+            // Recalculate width to maintain aspect ratio, but cap at frameWidth
+            const adjustedWidth = frameHeight / 0.75;
+            if (adjustedWidth <= frameWidth) {
+                // If adjusted width fits, center it
+                const frameX = photoMargin + (frameWidth - adjustedWidth) / 2;
+                const frameY = topSpace;
+                
+                // Shadow
+                doc.setFillColor(200, 200, 200);
+                doc.roundedRect(frameX + 2, frameY + 2, adjustedWidth, frameHeight, 3, 3, 'F');
+                
+                // White frame
+                const framePadding = isMobile ? 6 : 10;
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(frameX - framePadding, frameY - framePadding, 
+                               adjustedWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'F');
+                
+                // Add photo
+                const imgData = await toDataURL(photosList[i]);
+                doc.addImage(imgData, 'JPEG', frameX, frameY, adjustedWidth, frameHeight);
+                
+                // Frame border
+                doc.setDrawColor(220, 20, 60);
+                doc.setLineWidth(isMobile ? 1 : 1.8);
+                doc.roundedRect(frameX - framePadding, frameY - framePadding, 
+                               adjustedWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'S');
+                
+                // Caption box
+                const captionY = frameY + frameHeight + (isMobile ? 18 : 28);
+                const captionBoxWidth = pageWidth - (photoMargin * 2);
+                const captionBoxX = photoMargin;
+                
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'F');
+                doc.setDrawColor(255, 182, 193);
+                doc.setLineWidth(1);
+                doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'S');
+                
+                // Caption text
+                const caption = captionsList[i] || '';
+                if (caption) {
+                    const captionPadding = isMobile ? 10 : 15;
+                    const captionMaxWidth = captionBoxWidth - (captionPadding * 2);
+                    const captionImgHeight = captionBoxHeight - (captionPadding * 2);
+                    const captionFontSize = isMobile ? 12 : 16;
+                    const captionImage = await renderTextWithEmojis(caption, captionFontSize, captionMaxWidth);
+                    doc.addImage(captionImage, 'PNG', captionBoxX + captionPadding, 
+                                captionY + captionPadding, captionMaxWidth, captionImgHeight);
+                }
+            }
+        } else {
+            // Original sizing when 4:3 fits
+            const frameX = photoMargin;
+            const frameY = topSpace;
+            
+            // Shadow
+            doc.setFillColor(200, 200, 200);
+            doc.roundedRect(frameX + 2, frameY + 2, frameWidth, frameHeight, 3, 3, 'F');
+            
+            // White frame
+            const framePadding = isMobile ? 6 : 10;
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(frameX - framePadding, frameY - framePadding, 
+                           frameWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'F');
+            
+            // Add photo
+            const imgData = await toDataURL(photosList[i]);
+            doc.addImage(imgData, 'JPEG', frameX, frameY, frameWidth, frameHeight);
+            
+            // Frame border
+            doc.setDrawColor(220, 20, 60);
+            doc.setLineWidth(isMobile ? 1 : 1.8);
+            doc.roundedRect(frameX - framePadding, frameY - framePadding, 
+                           frameWidth + framePadding * 2, frameHeight + framePadding * 2, 5, 5, 'S');
+            
+            // Caption box
+            const captionY = frameY + frameHeight + (isMobile ? 18 : 28);
+            const captionBoxWidth = pageWidth - (photoMargin * 2);
+            const captionBoxX = photoMargin;
+            
+            doc.setFillColor(255, 255, 255);
+            doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'F');
+            doc.setDrawColor(255, 182, 193);
+            doc.setLineWidth(1);
+            doc.roundedRect(captionBoxX, captionY, captionBoxWidth, captionBoxHeight, 8, 8, 'S');
+            
+            // Caption text
+            const caption = captionsList[i] || '';
+            if (caption) {
+                const captionPadding = isMobile ? 10 : 15;
+                const captionMaxWidth = captionBoxWidth - (captionPadding * 2);
+                const captionImgHeight = captionBoxHeight - (captionPadding * 2);
+                const captionFontSize = isMobile ? 12 : 16;
+                const captionImage = await renderTextWithEmojis(caption, captionFontSize, captionMaxWidth);
+                doc.addImage(captionImage, 'PNG', captionBoxX + captionPadding, 
+                            captionY + captionPadding, captionMaxWidth, captionImgHeight);
+            }
         }
         
         // Page number
-        const pageNumY = pageHeight - (isMobile ? 12 : 15);
+        const pageNumY = pageHeight - (isMobile ? 15 : 18);
         doc.setFontSize(isMobile ? 8 : 9);
         doc.setTextColor(150, 150, 150);
         doc.text(`${i + 1}`, pageWidth / 2, pageNumY, { align: 'center' });
         
         // Heart decoration
         doc.setFillColor(255, 182, 193);
-        doc.circle(pageWidth / 2, pageNumY - (isMobile ? 10 : 12), isMobile ? 2.5 : 3, 'F');
+        doc.circle(pageWidth / 2, pageNumY - (isMobile ? 12 : 15), isMobile ? 2 : 3, 'F');
     }
     
     doc.save('Valentine_Memory_Book.pdf');
