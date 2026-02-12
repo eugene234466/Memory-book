@@ -31,7 +31,7 @@ function renderPreview() {
 
         const captionInput = document.createElement('input');
         captionInput.type = 'text';
-        captionInput.placeholder = 'Enter caption for this photo';
+        captionInput.placeholder = 'Enter caption (emojis supported! 💕✨)';
         captionInput.classList.add('caption-input');
         captionInput.addEventListener('input', (e) => {
             captionsList[index] = e.target.value;
@@ -52,6 +52,51 @@ previewBtn.addEventListener('click',  () => {
     renderPreview();
     previewContainer.scrollIntoView({ behavior: 'smooth' });
 });
+
+// Helper function to render text with emojis as image
+async function renderTextWithEmojis(text, fontSize, maxWidth) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set font for measurement
+    ctx.font = `${fontSize}px Arial, sans-serif`;
+    
+    // Split text into lines based on maxWidth
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = words[0];
+    
+    for (let i = 1; i < words.length; i++) {
+        const testLine = currentLine + ' ' + words[i];
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > maxWidth && currentLine !== '') {
+            lines.push(currentLine);
+            currentLine = words[i];
+        } else {
+            currentLine = testLine;
+        }
+    }
+    lines.push(currentLine);
+    
+    // Calculate canvas size
+    const lineHeight = fontSize * 1.4;
+    const canvasHeight = lines.length * lineHeight + 20;
+    canvas.width = maxWidth + 40;
+    canvas.height = canvasHeight;
+    
+    // Set rendering properties
+    ctx.font = `${fontSize}px Arial, sans-serif`;
+    ctx.fillStyle = '#3c3c3c';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    
+    // Draw each line
+    lines.forEach((line, index) => {
+        ctx.fillText(line, canvas.width / 2, index * lineHeight + 10);
+    });
+    
+    return canvas.toDataURL('image/png');
+}
 
 generatePDFBtn.addEventListener('click', async () => {
     const { jsPDF } = window.jspdf;
@@ -76,29 +121,27 @@ generatePDFBtn.addEventListener('click', async () => {
     doc.circle(80, 60, 15, 'F');
     doc.circle(pageWidth - 80, 60, 15, 'F');
     
-    // Title with shadow effect
-    doc.setFontSize(32);
-    doc.setTextColor(100, 100, 100);
-    doc.text(albumTitle, pageWidth / 2, 252, { align: 'center' });
-    doc.setTextColor(220, 20, 60);
-    doc.text(albumTitle, pageWidth / 2, 250, { align: 'center' });
+    // Title with shadow effect (with emoji support)
+    const titleImage = await renderTextWithEmojis(albumTitle, 32, pageWidth - 100);
+    doc.addImage(titleImage, 'PNG', pageWidth / 2 - 200, 220, 400, 60);
     
     // Decorative line
     doc.setDrawColor(220, 20, 60);
     doc.setLineWidth(2);
-    doc.line(pageWidth / 2 - 150, 280, pageWidth / 2 + 150, 280);
+    doc.line(pageWidth / 2 - 150, 300, pageWidth / 2 + 150, 300);
     
     // From/To section with box
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(pageWidth / 2 - 180, 320, 360, 120, 10, 10, 'F');
+    doc.roundedRect(pageWidth / 2 - 180, 330, 360, 120, 10, 10, 'F');
     doc.setDrawColor(220, 20, 60);
     doc.setLineWidth(1);
-    doc.roundedRect(pageWidth / 2 - 180, 320, 360, 120, 10, 10, 'S');
+    doc.roundedRect(pageWidth / 2 - 180, 330, 360, 120, 10, 10, 'S');
     
-    doc.setFontSize(20);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`From: ${yourName}`, pageWidth / 2, 370, { align: 'center' });
-    doc.text(`To: ${partnerName}`, pageWidth / 2, 410, { align: 'center' });
+    // Render names with emoji support
+    const fromImage = await renderTextWithEmojis(`From: ${yourName}`, 20, 320);
+    const toImage = await renderTextWithEmojis(`To: ${partnerName}`, 20, 320);
+    doc.addImage(fromImage, 'PNG', pageWidth / 2 - 160, 350, 320, 35);
+    doc.addImage(toImage, 'PNG', pageWidth / 2 - 160, 395, 320, 35);
     
     // Footer hearts
     doc.setFillColor(255, 182, 193);
@@ -110,7 +153,8 @@ generatePDFBtn.addEventListener('click', async () => {
     
     // Photo pages with enhanced layout
     for (let i = 0; i < photosList.length; i++) {
-        if (i > 0 || photosList.length > 1) doc.addPage();
+        // Always add a new page for photos (cover page is page 1)
+        doc.addPage();
         
         // Page background
         doc.setFillColor(255, 250, 250);
@@ -151,12 +195,12 @@ generatePDFBtn.addEventListener('click', async () => {
         doc.setLineWidth(1);
         doc.roundedRect(40, captionY, pageWidth - 80, 80, 8, 8, 'S');
         
-        // Caption text
-        doc.setFontSize(16);
-        doc.setTextColor(60, 60, 60);
+        // Caption text with emoji support
         const caption = captionsList[i] || '';
-        const splitCaption = doc.splitTextToSize(caption, pageWidth - 120);
-        doc.text(splitCaption, pageWidth / 2, captionY + 30, { align: 'center', maxWidth: pageWidth - 120 });
+        if (caption) {
+            const captionImage = await renderTextWithEmojis(caption, 16, pageWidth - 120);
+            doc.addImage(captionImage, 'PNG', 60, captionY + 15, pageWidth - 120, 50);
+        }
         
         // Page number
         doc.setFontSize(10);
