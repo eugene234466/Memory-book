@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HeartFolio - Memory Form</title>
+    <link rel="stylesheet" href="form.css">
+    <link rel="icon" href="love.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+<body>
+
+    <header>
+        <h1>Create Your Valentine Memory Book ❤️</h1>
+        <p>Upload your photos and add your lovely messages</p>
+    </header>
+
+    <main>
+        <form id="memoryForm">
+            <label for="name">Your Name:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="partnerName">Partner's Name:</label>
+            <input type="text" id="partnerName" name="partnerName" required>
+
+            <label for="albumTitle">Album Title:</label>
+            <input type="text" id="albumTitle" name="albumTitle" required>
+
+            <label for="photo">Upload Your Photos:</label>
+            <input type="file" id="photo" name="photos[]" accept="image/*" multiple required>
+
+            <button type="button" id="previewBtn">Preview Album</button>
+        </form>
+    </main>
+
+    <section class="preview">
+        <h2>Preview Your Memory Book</h2>
+        <div id="previewContainer"></div>
+        <button id="generatePDF">Generate PDF</button>
+    </section>
+    <script src="form.js"></script>
+</body>
+</html>
